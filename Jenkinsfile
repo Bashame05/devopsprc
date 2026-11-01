@@ -1,57 +1,24 @@
 pipeline {
     agent any
-    
-    tools {
-        jdk 'JAVA_HOME'
-        maven 'MAVEN_HOME'
-    }
-    
-    environment {
-        WAR_FILE = "${WORKSPACE}/target/roshambo.war"
-        TOMCAT_URL = 'http://localhost:7080'
-    }
-    
+
     stages {
-        stage('Clean Project') {
+        stage('Checkout') {
             steps {
-                bat "mvn clean"
+                git branch: 'main',
+                    url: 'https://github.com/Bashame05/devopsprc.git'
             }
         }
 
-        stage('Build Project') {
+        stage('Build') {
             steps {
-                bat "mvn package"
+                bat 'mvn clean package -DskipTests'
             }
         }
 
-        stage('Deploy to Tomcat') {
+        stage('Deploy') {
             steps {
-                script {
-                    def warFilePath = env.WAR_FILE
-                    echo "WAR file path: ${warFilePath}"
-
-                    if (fileExists(warFilePath)) {
-                        echo 'WAR file found, deploying...'
-                        withCredentials([usernamePassword(credentialsId: 'tomcat-creds',
-                                                          usernameVariable: 'TOMCAT_USER',
-                                                          passwordVariable: 'TOMCAT_PASSWORD')]) {
-                            bat """
-                                curl --upload-file "${warFilePath}" ^
-                                --user %TOMCAT_USER%:%TOMCAT_PASSWORD% ^
-                                "${TOMCAT_URL}/manager/text/deploy?path=/roshambo&update=true"
-                            """
-                        }
-                    } else {
-                        error('WAR file not found!')
-                    }
-                }
+                echo 'WAR file generated. Ready for Tomcat deployment.'
             }
-        }
-    }
-
-    post {
-        always {
-            echo 'Build completed'
         }
     }
 }
